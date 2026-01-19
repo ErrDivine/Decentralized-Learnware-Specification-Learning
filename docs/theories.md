@@ -25,4 +25,6 @@ We attempt to concatenate task vector and variables vector for the input of the 
     +                 cross-attention ---nn--> Pr(True|t,v)
     v ---encoder--> v`  /
 
-We consider the heteogenity of task and variables vectors, so head will first build two encoders respectively to process the task and variables vector, so that the can be concatenated later on. 
+We consider the heteogenity of task and variables vectors, so head will first build two encoders respectively to process the task and variables vector, so that they can be concatenated later on. Then we obtain cross attention, to get the sequencing information. Then the result of cross attention is put through a feed forward neural network to finally output the probability of the agent, which the head is in charge of, should act(vote).      
+
+And once the agent with the highest vote has changed, we will input the t and v into the agent and let it output till it termininates. Then we check token by token whether the vote's maximum property is violated by other agents, till at some token point the vote of the current agent is not the highest.
