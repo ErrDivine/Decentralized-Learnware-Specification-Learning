@@ -17,82 +17,111 @@ f_{agent}(t,v) = \Delta{v}
 $$
 
 ### Reinforcement Learning for head
-#### Basic elements  
-**1.$State$**  
-All heads share the same $State$   
+
+#### Basic elements
+
+**1. $State$**  
+All heads share the same $State$.
+
 $$
-State_t = Vector<t,v>
-$$   
-**2.$Action$**  
-Regard the $Action\ space$ as a confidence level ranging from 0 to 1. The policy network output two number $\alpha$ and $\beta$ that constructed the beta distribution for exploration instead of a certain value. Then we sample the $vote_i$ from $Beta(\alpha,\beta)$   
+State_t = \texttt{Vector}\langle t, v\rangle
 $$
-f_{head_i}(State_t) = \alpha,\beta 
-$$  
+
+**2. $Action$**  
+Regard the $Action$ space as a confidence level ranging from 0 to 1. The policy network outputs two numbers $\alpha$ and $\beta$ that construct a Beta distribution for exploration instead of a certain value. Then we sample $vote_i$ from $\mathrm{Beta}(\alpha,\beta)$.
+
 $$
-vote_i = 
+f_{\text{head}_i}(State_t) = (\alpha,\beta)
+$$
+
+$$
+vote_i =
 \begin{cases}
-Beta(\alpha,\beta).sample,\ while\ training \\
-\alpha/\alpha+\beta,\ while\ testing
+\mathrm{Beta}(\alpha,\beta).\mathrm{sample} & \text{while training} \\
+\frac{\alpha}{\alpha+\beta} & \text{while testing}
 \end{cases}
-$$   
-**3.$Bid\ \&\ Execute$**   
-Choose the agent with highest $vote$ to execute   
 $$
-j = argmax_{i} (vote_i)\\
-vote_t = vote_j
+
+**3. $Bid \ \&\ Execute$**  
+Choose the agent with the highest $vote$ to execute.
+
 $$
-$\Delta{v}$ here means the executor change  
+j = \arg\max_i (vote_i), \qquad vote_t = vote_j
 $$
-\Delta{v} = f_{agent_j}(t,v)\\
-State_{t+1} = State_t + \Delta{v}
+
+$\Delta v$ here means the executor changes.
+
 $$
-Compute $log(pdf(vote_t))$ and prepare for the optimization   
+\Delta v = f_{\text{agent}_j}(t,v), \qquad State_{t+1} = State_t + \Delta v
 $$
-\log P_{old} = \text{Beta}(\alpha, \beta).\text{log\_prob}(vote_t)
-$$   
-**4.$Reward$**   
-The judger give score if the executor change    
+
+Compute $\log(\mathrm{pdf}(vote_t))$ and prepare for the optimization.
+
 $$
-score_t = f_{judger}(t,v)
-$$    
+\log P_{\text{old}} = \mathrm{Beta}(\alpha,\beta).\mathrm{log\_prob}(vote_t)
 $$
-\Delta{score} = score_t - score_{t-1}
-$$   
-Reward $R_t$ for the execute $agent_j$    
+
+**4. $Reward$**  
+The judger gives a score if the executor changes.
+
 $$
-R_t = \Delta{score} * vote_j
-$$   
-**5.$Buffer$**  
-Store for the optimization process   
+score_t = f_{\text{judger}}(t,v)
 $$
-append\ (State_t,vote_t,R_t,log P_{old},j) \ to\ Buffer 
-$$   
+
+$$
+\Delta score = score_t - score_{t-1}
+$$
+
+Reward $R_t$ for executing $\text{agent}_j$.
+
+$$
+R_t = \Delta score \cdot vote_j
+$$
+
+**5. $Buffer$**  
+Store for the optimization process.
+
+$$
+\mathrm{append}\big(State_t, vote_t, R_t, \log P_{\text{old}}, j\big)\ \text{to Buffer}
+$$
 
 #### Optimization process
+
 **Step 1**  
-Pick $(S,vote,R,logP_{old},j)$ from the $Buffer$ and will update parameters of $head_j$, input $S_t$ to $head_j$, get new $(\alpha',\beta')$   
-**Step 2**    
-Compute the same action $vote$'s $\log P_{new}$ under $\text{Beta}(\alpha', \beta')$  
-**Step 3**   
-Compute ratio   
+Pick $(S, vote, R, \log P_{\text{old}}, j)$ from the Buffer and update the parameters of $\text{head}_j$. Input $S_t$ to $\text{head}_j$ and get new $(\alpha',\beta')$.
+
+**Step 2**  
+Compute the same action $vote$'s $\log P_{\text{new}}$ under $\mathrm{Beta}(\alpha',\beta')$.
+
+**Step 3**  
+Compute ratio.
+
 $$
-r(\theta) = \exp(\log P_{new} - \log P_{old})
-$$    
-**Step 4**    
-A critic network predict $\Delta{score}_p$,   
+r(\theta) = \exp\big(\log P_{\text{new}} - \log P_{\text{old}}\big)
 $$
-V(S) = \Delta{score}_p * vote_j
-$$  
+
+**Step 4**  
+A critic network predicts $\Delta score_p$.
+
 $$
-A(S) = R - V(S) 
-$$  
-The training process of the critic network can be regarded as a regression network   
+V(S) = \Delta score_p \cdot vote_j
+$$
+
+$$
+A(S) = R - V(S)
+$$
+
+The training process of the critic network can be regarded as a regression network.
+
 **Step 5**  
-The PPO lose is  
+The PPO loss is
+
 $$
-L = -\min \Big( r A, \ \text{clip}(r, 1-\epsilon, 1+\epsilon) A \Big)
-$$   
-Then we do backpropagation and update parameters as usual  
+L = -\min\Big( rA,\ \mathrm{clip}(r, 1-\epsilon, 1+\epsilon)\,A \Big)
+$$
+
+Then we do backpropagation and update parameters as usual.
+
 
 
 ## Architecture 
