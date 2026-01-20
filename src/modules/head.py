@@ -19,8 +19,6 @@ class HeadConfig:
     ff_dim: int = 256
     encoder_depth: int = 2
     dropout: float = 0.1
-    agent_count: Optional[int] = None
-    agent_embed_dim: Optional[int] = None
 
 
 class MLPEncoder(nn.Module):
@@ -57,9 +55,6 @@ class Head(nn.Module):
     def __init__(self, config: HeadConfig) -> None:
         super().__init__()
         self.config = config
-        agent_embed_dim = config.agent_embed_dim or config.hidden_dim
-        if config.agent_count is not None and config.agent_count <= 0:
-            raise ValueError("agent_count must be positive when provided")
         if config.attention_heads < 1:
             raise ValueError("attention_heads must be >= 1")
 
@@ -75,15 +70,6 @@ class Head(nn.Module):
             depth=config.encoder_depth,
             dropout=config.dropout,
         )
-        self.agent_embed: Optional[nn.Embedding]
-        if config.agent_count is None:
-            self.agent_embed = None
-        else:
-            self.agent_embed = nn.Embedding(config.agent_count, agent_embed_dim)
-            if agent_embed_dim != config.hidden_dim:
-                self.agent_adapter = nn.Linear(agent_embed_dim, config.hidden_dim)
-            else:
-                self.agent_adapter = nn.Identity()
 
         self.cross_attention = nn.MultiheadAttention(
             config.hidden_dim,
@@ -108,43 +94,18 @@ class Head(nn.Module):
             return x.unsqueeze(1)
         return x
 
-    def _broadcast_agent(self, agent: Tensor, seq_len: int) -> Tensor:
-        if agent.dim() == 1:
-            agent = agent.unsqueeze(0)
-        if agent.dim() == 2:
-            agent = agent.unsqueeze(1)
-        if agent.size(1) != seq_len:
-            agent = agent.expand(-1, seq_len, -1)
-        return agent
-
     def forward(
         self,
         task: Tensor,
         variables: Tensor,
-        agent_id: Optional[Tensor] = None,
-        agent_embedding: Optional[Tensor] = None,
         return_attention: bool = False,
     ) -> Union[Tensor, Tuple[Tensor, Tensor]]:
         """Compute logits for Pr(action=True|t,v)."""
         t = self.task_encoder(task)
         v = self.var_encoder(variables)
 
-        if agent_id is not None and self.agent_embed is None:
-            raise ValueError("agent_id provided but agent_embed is not configured")
-
-        if agent_id is not None:
-            agent = self.agent_embed(agent_id)
-            agent = self.agent_adapter(agent)
-        elif agent_embedding is not None:
-            agent = agent_embedding
-        else:
-            agent = None
-
         t_seq = self._ensure_3d(t)
         v_seq = self._ensure_3d(v)
-        if agent is not None:
-            agent_seq = self._broadcast_agent(agent, t_seq.size(1))
-            t_seq = t_seq + agent_seq
 
         attn_out, attn_weights = self.cross_attention(
             t_seq,
@@ -163,25 +124,21 @@ class Head(nn.Module):
         self,
         task: Tensor,
         variables: Tensor,
-        agent_id: Optional[Tensor] = None,
-        agent_embedding: Optional[Tensor] = None,
     ) -> Tensor:
         """Return probability vote in [0,1]."""
         self.eval()
         with torch.no_grad():
-            logits = self.forward(task, variables, agent_id, agent_embedding)
+            logits = self.forward(task, variables)
             return torch.sigmoid(logits)
 
     def should_act(
         self,
         task: Tensor,
         variables: Tensor,
-        agent_id: Optional[Tensor] = None,
-        agent_embedding: Optional[Tensor] = None,
         threshold: float = 0.5,
     ) -> Tensor:
         """Return a boolean decision tensor based on threshold."""
-        vote = self.predict_vote(task, variables, agent_id, agent_embedding)
+        vote = self.predict_vote(task, variables)
         return vote >= threshold
 
     def compute_loss(self, logits: Tensor, targets: Tensor) -> Tensor:
@@ -193,16 +150,12 @@ class Head(nn.Module):
             task = batch.get("task")
             variables = batch.get("variables")
             targets = batch.get("targets")
-            agent_id = batch.get("agent_id")
-            agent_embedding = batch.get("agent_embedding")
         else:
             if len(batch) < 3:
                 raise ValueError("batch must provide task, variables, and targets")
             task, variables, targets = batch[:3]
-            agent_id = batch[3] if len(batch) > 3 else None
-            agent_embedding = batch[4] if len(batch) > 4 else None
 
-        logits = self.forward(task, variables, agent_id, agent_embedding)
+        logits = self.forward(task, variables)
         return self.compute_loss(logits, targets)
 
     def fit(
