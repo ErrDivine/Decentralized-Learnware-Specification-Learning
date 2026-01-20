@@ -42,7 +42,7 @@ vote_i =
 \end{cases}
 $$
 
-**3. $Bid \ \&\ Execute$**  
+**3. $Bid$ \& $Execute$**  
 Choose the agent with the highest $vote$ to execute.
 
 $$
