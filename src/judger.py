@@ -19,7 +19,6 @@ SYSTEM_PROMPT = (
 )
 
 def parse_score(text: str) -> int:
-    # 只要 0-10 的整数；模型偶尔可能输出换行/句号，所以用正则兜底
     m = re.search(r"\b(10|[0-9])\b", text.strip())
     if not m:
         raise ValueError(f"Cannot parse score from model output: {text!r}")
@@ -34,13 +33,12 @@ def judge_score(task: str, history: str, model: str, region: str) -> int:
     if not base_url:
         raise RuntimeError(f"Unknown region {region}. Choose from: {list(BASE_URLS.keys())}")
 
-    # 用 OpenAI SDK 走百炼的 OpenAI 兼容接口 :contentReference[oaicite:4]{index=4}
     client = OpenAI(api_key=api_key, base_url=base_url)
 
     user_input = f"TASK:\n{task.strip()}\n\nHISTORY:\n{history.strip() if history.strip() else '(empty)'}\n"
 
     resp = client.chat.completions.create(
-        model=model,  # 例如 qwen-max / qwen-plus / qwen-turbo :contentReference[oaicite:5]{index=5}
+        model=model,  
         messages=[
             {"role": "system", "content": SYSTEM_PROMPT},
             {"role": "user", "content": user_input},
@@ -58,7 +56,7 @@ def main():
     ap.add_argument("--history", default="")
     ap.add_argument("--history_file", default="")
     ap.add_argument("--model", default="qwen-max")
-    ap.add_argument("--region", default="beijing")  # 你截图是北京，就用默认
+    ap.add_argument("--region", default="beijing") 
     args = ap.parse_args()
 
     history = args.history
