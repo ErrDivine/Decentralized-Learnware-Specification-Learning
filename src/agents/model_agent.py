@@ -5,7 +5,7 @@ from transformers import AutoModelForCausalLM, AutoTokenizer
 from base_llm import BaseLLM
 
 class ModelAgent(BaseLLM):
-    def __init__(self,model_path = "../../model/Qwen2.5-3B-Instruct"):
+    def __init__(self,model_path = "../../model/Qwen2.5-Math-7B-Instruct"):
         self.llm = BaseLLM(model_path)
         self.system_prompt = """
         You are a Modeling Specialist for math word problems.
@@ -24,7 +24,7 @@ class ModelAgent(BaseLLM):
         [Boundaries]
         1.Do not carry out long derivations or heavy calculations.
         2.Do not finalize the numeric answer.
-        3.Output should be a clear model + plan in normal prose
+        3.Output should be a clear model + plan in normal prose.
         """
 
     def run(self,input_message):

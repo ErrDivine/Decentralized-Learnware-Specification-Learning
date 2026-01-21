@@ -7,7 +7,7 @@ from base_llm import BaseLLM
 
 
 class ReasonAgent(BaseLLM):
-    def __init__(self,model_path = "../../model/Qwen2.5-3B-Instruct"):
+    def __init__(self,model_path = "../../model/Qwen2.5-Math-7B-Instruct"):
         self.llm = BaseLLM(model_path)
 
         self.system_prompt = f"""
