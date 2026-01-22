@@ -4,6 +4,9 @@
 
 - [ ] We need to get baseline experiment settings that can get us quick onto experimenting.
 - [ ] Main idea: transition from using one model's parameter shift to individual decision model.(or control model. Whatsever. Not decided yet.) [see detail a]
+- [ ] We need a proper award.
+- [ ] We try voting or voting with a judge. 2 cases.
+- [ ] 
 
 
 
