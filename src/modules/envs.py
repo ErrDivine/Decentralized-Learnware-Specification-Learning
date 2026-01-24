@@ -214,5 +214,5 @@ class RealEnv:
                 "Continue solving step by step. Provide the next step or refinement. "
                 "Keep it concise."
             )
-            return agent.run(prompt)  # type: ignore
+            return agent.run(prompt, max_new_tokens=self.agent_max_new_tokens)  # type: ignore
         raise ValueError("Agent must implement act(task_text, history) or run(prompt)")

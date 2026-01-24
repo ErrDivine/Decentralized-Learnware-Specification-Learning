@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # Real training for Heads on all datasets with GPU
-# Prereqs: export DASHSCOPE_API_KEY, ensure models under model/ and GPU available.
+# Prereqs: export DASHSCOPE_API_KEY (optional DASHSCOPE_BASE_URL), ensure encoder under model/encoder and GPU available.
 
 DATASETS=(
   "datasets/gsm8k_arrow"
@@ -13,7 +13,7 @@ RUN_DIR="runs/heads_ckpt"
 DEVICE="cuda"
 SPLIT="train"
 
-export DASHSCOPE_API_KEY='sk-46f61c60859f4d19a1de714803d10f3e'
+: "${DASHSCOPE_API_KEY:?Please export DASHSCOPE_API_KEY before running this script.}"
 
 for ds in "${DATASETS[@]}"; do
   echo "=== Training on $ds ==="

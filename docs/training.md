@@ -4,7 +4,7 @@ This document specifies the end-to-end training and inference pipeline for the m
 
 ## Problem Setting
 - State: `(t, v)` where `t` is the task text (problem statement) and `v` is the current solution/proof text (accumulated agent outputs).
-- Agents: four fixed LLMs (Compute, Reason, Model, Verify) with their own system prompts and local model paths under `model/`.
+- Agents: four fixed LLMs (Compute, Reason, Model, Verify) with their own system prompts and API model names (DashScope OpenAI-compatible; configured by `DASHSCOPE_API_KEY` and optional `DASHSCOPE_BASE_URL`).
 - Head: one per agent, maps encoded `(t, v)` to Beta parameters `(α, β)`; the vote is the Beta mean (inference) or a sample (training).
 - Selection: argmax over votes; only the winning agent acts.
 - Reward: `R = Δscore * vote`, where `score` is returned by the judger on `(t, v)` (default `qwen-max`, region `beijing`).
@@ -13,7 +13,7 @@ This document specifies the end-to-end training and inference pipeline for the m
 ## Architecture
 - Encoder: `model/encoder` (HF model) via `TextEncoder` → mean-pooled embedding for `t` and `v`.
 - Head (`src/modules/head.py`): MLP encoders for `t` and `v`, cross-attention fusion, FFN to 2-dim Beta params; optional critic head.
-- Agents: `ComputeAgent`, `ReasonAgent`, `ModelAgent`, `VerifyAgent` (paths embedded; see `src/agents/*.py`).
+- Agents: `ComputeAgent`, `ReasonAgent`, `ModelAgent`, `VerifyAgent` (API model names + prompts embedded; see `src/agents/*.py`).
 - Environment: `RealEnv` (`src/modules/envs.py`) orchestrates agents, encoder, judger; applies termination logic.
 - Judger: `src/judger.py`, uses DashScope API; requires `DASHSCOPE_API_KEY`.
 - Training loop: `src/run.py` (real-only, no synthetic branches).
@@ -40,7 +40,7 @@ This document specifies the end-to-end training and inference pipeline for the m
 1) **Prerequisites**
    - Export `DASHSCOPE_API_KEY`.
    - Ensure GPU availability; install `accelerate` if you want auto device mapping.
-   - Place models under `model/` (agents and encoder).
+   - Place the encoder under `model/encoder` (agents are API-based, no local agent models required).
 2) **Run training**
    ```bash
    python src/run.py \
@@ -78,7 +78,7 @@ This document specifies the end-to-end training and inference pipeline for the m
 - Solution traces are accumulated in `v` during rollout; you can log them for offline analysis.
 
 ## Failure Modes / Tips
-- **OOM/timeout**: models are large; run on GPU, consider `accelerate` for sharding.
+- **OOM/timeout**: encoder/heads can OOM; API calls can timeout. Use GPU for encoder/heads and reduce `agent_max_new_tokens` if needed.
 - **Missing key**: ensure `DASHSCOPE_API_KEY` is set.
 - **Termination too early**: lower `stop_threshold` or increase `max_steps`.
 - **Reward instability**: adjust `value_coef`/`entropy_coef` or increase `save_every` to reduce I/O.

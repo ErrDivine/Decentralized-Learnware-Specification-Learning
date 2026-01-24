@@ -13,7 +13,7 @@ class BaseLLM(ABC):
                 model_name,
                 trust_remote_code=True,
                 device_map="auto",
-                torch_dtype="bfloat16",
+                dtype="bfloat16",
             )
         except Exception:
             # Fallback to CPU load if accelerate/device_map is unavailable
