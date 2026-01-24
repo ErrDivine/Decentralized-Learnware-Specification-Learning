@@ -3,11 +3,14 @@ import json
 import numpy as np
 from abc import ABC, abstractmethod
 from transformers import AutoModelForCausalLM, AutoTokenizer
-from base_llm import BaseLLM
+from .base_llm import BaseLLM
+from pathlib import Path
 
 
 class ReasonAgent(BaseLLM):
-    def __init__(self,model_path = "../../model/Qwen2.5-Math-7B-Instruct"):
+    def __init__(self, model_path: str | None = None):
+        if model_path is None:
+            model_path = str(Path(__file__).resolve().parents[2] / "model" / "Qwen2.5-Math-7B-Instruct")
         self.llm = BaseLLM(model_path)
 
         self.system_prompt = f"""
@@ -38,9 +41,3 @@ class ReasonAgent(BaseLLM):
         
         response_text = self.llm.generate(messages)
         return response_text
-
-
-agent = ReasonAgent()
-response = agent.run("Mr. Sanchez found out that 40% of his Grade 5  students got a final grade below B. How many of his students got a final grade of B and above if he has 60 students in Grade 5?")
-print(response)
-

@@ -2,10 +2,13 @@ import re
 import json
 from abc import ABC, abstractmethod
 from transformers import AutoModelForCausalLM, AutoTokenizer
-from base_llm import BaseLLM
+from pathlib import Path
+from .base_llm import BaseLLM
 
 class ComputeAgent(BaseLLM):
-    def __init__(self,model_path = "../../model/Qwen2.5-3B-Instruct"):
+    def __init__(self, model_path: str | None = None):
+        if model_path is None:
+            model_path = str(Path(__file__).resolve().parents[2] / "model" / "Qwen2.5-3B-Instruct")
         self.llm = BaseLLM(model_path)
         self.system_prompt = f""""
         You are a Computation Specialist.
@@ -36,6 +39,3 @@ class ComputeAgent(BaseLLM):
         return response_text
 
 
-agent = ComputeAgent()
-response = agent.run("Compute (48+24)\times \frac{3}{5} - \sqrt{169} + \sum_{k=1}^{10} k^2")
-print(response)

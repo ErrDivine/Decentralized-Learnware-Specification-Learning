@@ -1,4 +1,7 @@
-/model
-/.env
-/errdivine
-/src/modules/__pycache__/*
+model
+.env
+errdivine
+src/modules/__pycache__/*
+.venv/
+DLSL.zip
+*/__pycache__/

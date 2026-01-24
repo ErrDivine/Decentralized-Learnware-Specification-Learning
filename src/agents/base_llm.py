@@ -8,12 +8,19 @@ class BaseLLM(ABC):
         self.tokenizer = AutoTokenizer.from_pretrained(
             model_name, trust_remote_code=True
         )
-        self.model = AutoModelForCausalLM.from_pretrained(
-            model_name,
-            trust_remote_code=True,
-            device_map="auto",
-            dtype="bfloat16"
-        )
+        try:
+            self.model = AutoModelForCausalLM.from_pretrained(
+                model_name,
+                trust_remote_code=True,
+                device_map="auto",
+                torch_dtype="bfloat16",
+            )
+        except Exception:
+            # Fallback to CPU load if accelerate/device_map is unavailable
+            self.model = AutoModelForCausalLM.from_pretrained(
+                model_name,
+                trust_remote_code=True,
+            ).to("cpu")
 
     def generate(self, messages, max_new_tokens=1024, **kwargs):
         text = self.tokenizer.apply_chat_template(
